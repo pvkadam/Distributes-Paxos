@@ -28,6 +28,7 @@ class Tickets:
         self.accepts = 0
         self.leaderport = 0
         self.tickets = 100
+        self.leaderIsAlive = False
         w, h = 5, 2 # 4, n-1
         self.acks = [[0 for x in range(w)] for y in range(h)]
         self.acceptances = [[0 for x in range(2)] for y in range(2)] #n-1 rows
@@ -35,6 +36,8 @@ class Tickets:
         self.leaderCheck()
         start_new_thread(self.startListening, ())
         start_new_thread(self.awaitInput, ())
+        start_new_thread(self.startHeartbeat, ())
+
         while True:
             pass
 
@@ -68,6 +71,9 @@ class Tickets:
             message = "accepted "+ str(self.AcceptNum.num) + " "+ str(self.AcceptNum.ID) + " "+ str(self.AcceptVal) #####?????#####
             self.sendMessage(leaderport, message)
 
+        if "heartbeat" in msg:
+            self.leaderIsAlive = True
+
         if "Value received" in msg:
             valReceived = msg.split()[-2]
             if int(valReceived) > int(self.tickets):
@@ -75,6 +81,13 @@ class Tickets:
             else:
                 self.sendAcceptRequests(valReceived)
                 self.tickets -= int(valReceived)
+
+
+    def startHeartbeat(self):
+        while True:
+            time.sleep(1)
+            self.sendToAll("heartbeat")
+
 
 
 
@@ -177,3 +190,4 @@ delay = configdata["delay"]
 ID = str(sys.argv[1])
 tickets = configdata["tickets"]
 c = Tickets(ID)
+HEARTBEAT_FREQ = configdata["HEARTBEAT_FREQ"]
