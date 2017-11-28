@@ -7,6 +7,7 @@ import time
 import sys
 # import ballot
 
+
 class BallotNum:
     def __init__(self, num, ID):
         self.num = num
@@ -14,6 +15,7 @@ class BallotNum:
 
 class Tickets:
     def __init__(self, ID):
+
         print("System running: " + ID)
         self.ID = ID
         self.port = configdata["kiosks"][ID][1]
@@ -25,6 +27,7 @@ class Tickets:
         self.numOfAcks = 0
         self.accepts = 0
         self.leaderport = 0
+        self.tickets = 100
         w, h = 5, 2 # 4, n-1
         self.acks = [[0 for x in range(w)] for y in range(h)]
         self.acceptances = [[0 for x in range(2)] for y in range(2)] #n-1 rows
@@ -36,6 +39,7 @@ class Tickets:
             pass
 
     def receiveMessages(self, conn, addr):
+
         msg = conn.recv(1024).decode()
         print(msg)
 
@@ -66,7 +70,12 @@ class Tickets:
 
         if "Value received" in msg:
             valReceived = msg.split()[-2]
-            self.sendAcceptRequests(valReceived)
+            if int(valReceived) > int(self.tickets):
+                print("Only" + str(self.tickets) + "left")
+            else:
+                self.sendAcceptRequests(valReceived)
+                self.tickets -= int(valReceived)
+
 
 
     def leaderCheck(self): #Election to be implemented
@@ -93,19 +102,22 @@ class Tickets:
         message = "accept "+ str(self.BallotNum.num) + " "+ str(newVal) + " coming from "+ str(self.ID) + " " + str(self.port)
         self.sendToAll(message)
 
+
+
     def awaitInput(self):
         while True:
             message = input('Enter number of tickets you wish to buy ')
             val = int(message)
             try:
+                    # tickets -= val
                   # change to if 'Buy 2' or 'show'
-                if (self.leaderport == self.port):
-                    self.sendAcceptRequests(val)
-                else:
-                    msg = "Value received " + str(val) + " " + str(self.port)
-                    self.sendMessage(self.leaderport, msg)
+                    if (self.leaderport == self.port):
+                        self.sendAcceptRequests(val)
+                    else:
+                        msg = "Value received " + str(val) + " " + str(self.port)
+                        self.sendMessage(self.leaderport, msg)
             except ValueError:
-                print("Invalid Input")
+                    print("Invalid Input")
 
 
     def startListening(self):
