@@ -8,5 +8,6 @@
   },
   "delay" : 5,
   "tickets": 100,
-
+  "HEARTBEAT_FREQ":500
 }
+
