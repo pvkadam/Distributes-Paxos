@@ -1,1 +1,1 @@
-# Distributes-Paxos ..
+# Distributed-Paxos ..
