@@ -18,7 +18,7 @@ class Tickets:
         print("System running: " + ID)
         self.ID = ID #C1
         self.port = configdata["kiosks"][ID][1]
-        self.processID = int(self.port) - 4000 #1
+        self.processID = int(self.port) - 5000 #1
         self.hostname = gethostname()
         self.BallotNum = BallotNum(0,self.port)
         self.AcceptNum = BallotNum(0,0)
@@ -29,17 +29,17 @@ class Tickets:
         self.ticketsLeft = 1000
         self.majorityofLive = 2
         self.live = 3
-        self.liveProcesses = [4001, 4002, 4003]
+        self.threadtimer = threading.Timer(3, self.setLeaderFalse)
+        self.liveProcesses = [5001, 5002, 5003]
         self.leaderport = 0
         self.leaderIsAlive = False
         self.electionInProgress = False
         self.log = []
         w, h = 5, 2 # 4, n-1
         self.acks = [[0 for x in range(w)] for y in range(h)]
-        self.acceptances = [[0 for x in range(9)] for y in range(10)] #n-1 rows
+        self.acceptances = [[0 for x in range(4)] for y in range(10)] #n-1 rows
         self.s = socket(AF_INET, SOCK_STREAM)
         time.sleep(3)
-        # self.leaderCheck()
         start_new_thread(self.startListening, ())
         start_new_thread(self.awaitInput, ())
         start_new_thread(self.startSendHeartbeat, ())
@@ -62,8 +62,9 @@ class Tickets:
         if "prepare" in msg:
             print(msg)
             num1 = int(msg.split()[1])
-            sendToPort = int(msg.split()[-1])
-            if num1 > self.BallotNum.num or (num1 == self.BallotNum.num and sendToPort > int(self.BallotNum.ID)):
+            sendToPort = int(msg.split()[2])
+            lengthofLeaderLog = int(msg.split()[-1])
+            if (num1 > self.BallotNum.num or (num1 == self.BallotNum.num and sendToPort > int(self.BallotNum.ID))) and lengthofLeaderLog >=len(self.log):
                 self.BallotNum.num = num1
                 message = "ack " + str(self.BallotNum.num) + " " + str(self.AcceptNum.num) + " " + str(self.AcceptNum.ID) +" " + str(self.AcceptVal)
                 self.sendMessage(sendToPort, message)
@@ -100,7 +101,7 @@ class Tickets:
                 print(message)
                 self.log.append("Buy "+ str(v))
                 self.sendToAll(message)
-                self.acceptances = [[0 for x in range(9)] for y in range(10)]
+                self.acceptances = [[0 for x in range(4)] for y in range(10)]
                 self.accepts =0
 
         if "accept " in msg: #I am not a leader
@@ -135,9 +136,9 @@ class Tickets:
             self.ticketsLeft = int(msg.split()[1])
             msg = msg.split(' ', 2)[2]
             self.log = ast.literal_eval(msg)
+            self.threadtimer.cancel()
             self.leaderIsAlive = True
-            self.timer()
-            self.leaderIsAlive = False
+            self.startTimer()
 
         if "Add to log" in msg:
             print(msg)
@@ -175,7 +176,7 @@ class Tickets:
         self.sendToAll(m)
         time.sleep(3)
         self.BallotNum.num += 1
-        message = "prepare " + str(self.BallotNum.num) + " " + str(self.BallotNum.ID)
+        message = "prepare " + str(self.BallotNum.num) + " " + str(self.BallotNum.ID) + " " + str(len(self.log))
         self.sendToAll(message)
 
     def sendAcceptRequests(self, val):
@@ -211,6 +212,7 @@ class Tickets:
                 print(self.log[-1])
                 print("My log is: ")
                 print(self.log)
+                self.leaderCheck()
 
 
     def startListening(self):
@@ -241,10 +243,12 @@ class Tickets:
         rSocket.send(message.encode())
         rSocket.close()
 
-    def timer(self):
-        # timetosleep = 0.45 + (self.processID*0.1)
-        timetosleep = 0.47
-        time.sleep(timetosleep) # Sleep for 0.45 + processID*0.1
+    def startTimer(self):
+        self.threadtimer = threading.Timer(3, self.setLeaderFalse)
+        self.threadtimer.start()
+
+    def setLeaderFalse(self):
+        self.leaderIsAlive = False
 
     def startSendHeartbeat(self):
         while True:
