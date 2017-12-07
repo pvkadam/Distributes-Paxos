@@ -62,9 +62,8 @@ class Tickets:
         if "prepare" in msg:
             print(msg)
             num1 = int(msg.split()[1])
-            sendToPort = int(msg.split()[2])
-            lengthofLeaderLog = int(msg.split()[-1])
-            if (num1 > self.BallotNum.num or (num1 == self.BallotNum.num and sendToPort > int(self.BallotNum.ID))) and lengthofLeaderLog >=len(self.log):
+            sendToPort = int(msg.split()[-1])
+            if num1 > self.BallotNum.num or (num1 == self.BallotNum.num and sendToPort > int(self.BallotNum.ID)):
                 self.BallotNum.num = num1
                 message = "ack " + str(self.BallotNum.num) + " " + str(self.AcceptNum.num) + " " + str(self.AcceptNum.ID) +" " + str(self.AcceptVal)
                 self.sendMessage(sendToPort, message)
@@ -83,7 +82,8 @@ class Tickets:
                 start_new_thread(self.startSendHeartbeat, ())
                       # str(self.BallotNum.num) + " " + str(self.AcceptVal)
                 self.sendToAll(msg)
-                self.sendAcceptRequests(self.pending)
+                if self.pending > 0:
+                    self.sendAcceptRequests(self.pending)
 
         if "accepted " in msg:
             print(msg)
@@ -176,7 +176,7 @@ class Tickets:
         self.sendToAll(m)
         time.sleep(3)
         self.BallotNum.num += 1
-        message = "prepare " + str(self.BallotNum.num) + " " + str(self.BallotNum.ID) + " " + str(len(self.log))
+        message = "prepare " + str(self.BallotNum.num) + " " + str(self.BallotNum.ID)
         self.sendToAll(message)
 
     def sendAcceptRequests(self, val):
